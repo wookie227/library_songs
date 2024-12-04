@@ -18,11 +18,14 @@ type Config struct {
 }
 
 func NewDb(cfg Config) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode)), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode,
+	)), &gorm.Config{})
 
 	if err != nil {
 		return nil, err
 	}
+
 	err = db.AutoMigrate(&models.Song{})
 	if err != nil {
 		return nil, err

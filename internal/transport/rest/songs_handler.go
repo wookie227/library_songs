@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/pgtype"
 )
 
 func (h *Handler) CreateSong(c *gin.Context) {
@@ -79,5 +80,46 @@ func (h *Handler) GetSongById(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, song)
+	var verses []string
+	if song.Verses.Status == pgtype.Present {
+		for _, v := range song.Verses.Elements {
+			verses = append(verses, v.String)
+		}
+	}
+
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset"})
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+
+	totalVerses := len(verses)
+	if offset > totalVerses {
+		c.JSON(http.StatusOK, gin.H{"verses": []string{}})
+		return
+	}
+	end := offset + limit
+	if end > totalVerses {
+		end = totalVerses
+	}
+
+	paginatedVerses := verses[offset:end]
+
+	response := gin.H{
+		"id":     song.ID,
+		"group":  song.Group,
+		"song":   song.Song,
+		"verses": paginatedVerses,
+		"total":  totalVerses,
+		"offset": offset,
+		"limit":  limit,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
